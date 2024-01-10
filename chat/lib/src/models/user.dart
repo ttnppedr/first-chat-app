@@ -3,7 +3,7 @@ class User {
   String? username;
   String? photoUrl;
   String? _id;
-  bool? active;
+  bool active;
   DateTime? lastseen;
 
   User(

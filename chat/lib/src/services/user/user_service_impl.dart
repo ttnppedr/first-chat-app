@@ -30,8 +30,11 @@ class UserService implements IUserService {
   }
 
   @override
-  Future<List<User>> online() {
-    // TODO: implement online
-    throw UnimplementedError();
+  Future<List<User>> online() async {
+    Cursor users =
+        await r.table('users').filter({'active': true}).run(_connection!);
+    final userList = await users.toList();
+
+    return userList.map((item) => User.fromJson(item)).toList();
   }
 }

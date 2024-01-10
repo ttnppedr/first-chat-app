@@ -32,4 +32,19 @@ void main() {
 
     expect(userWithId.id, isNotEmpty);
   });
+
+  test('get online users', () async {
+    final user = User(
+      username: 'test',
+      photoUrl: 'url',
+      active: true,
+      lastseen: DateTime.now(),
+    );
+
+    await sut.connect(user);
+
+    final onlineUsers = await sut.online();
+
+    expect(onlineUsers.length, 1);
+  });
 }

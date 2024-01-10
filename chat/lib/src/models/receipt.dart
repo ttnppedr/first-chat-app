@@ -28,7 +28,7 @@ class Receipt {
   Map<String, dynamic> toJson() => {
         'recipient': recipient,
         'messageId': messageId,
-        'status': status,
+        'status': status.value(),
         'timestamp': timestamp,
       };
 

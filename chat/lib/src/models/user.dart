@@ -7,10 +7,10 @@ class User {
   DateTime? lastseen;
 
   User(
-      {required String username,
-      required String photoUrl,
-      required bool active,
-      required DateTime lastseen});
+      {required this.username,
+      required this.photoUrl,
+      required this.active,
+      required this.lastseen});
 
   toJson() => {
         'username': username,
@@ -26,7 +26,7 @@ class User {
       active: json['active'],
       lastseen: json['lastseen'],
     );
-    user._id = json['_id'];
+    user._id = json['id'];
     return user;
   }
 }

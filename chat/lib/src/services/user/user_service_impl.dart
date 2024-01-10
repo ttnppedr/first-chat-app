@@ -24,9 +24,13 @@ class UserService implements IUserService {
   }
 
   @override
-  Future<void> disconnect(User user) {
-    // TODO: implement disconnect
-    throw UnimplementedError();
+  Future<void> disconnect(User user) async {
+    await r.table('users').update({
+      'id': user.id,
+      'active': false,
+      'lastseen': DateTime.now()
+    }).run(_connection!);
+    _connection.close();
   }
 
   @override

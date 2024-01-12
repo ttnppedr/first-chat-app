@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:chat/src/models/typing_event.dart';
 import 'package:chat/src/models/user.dart';
-import 'package:chat/src/services/typing/typing_notification_service.dart';
+import 'package:chat/src/services/typing/typing_notification_contract.dart';
 import 'package:rethink_db_ns/rethink_db_ns.dart';
 
 class TypingNotification implements ITypingNotificationService {
@@ -52,7 +52,7 @@ class TypingNotification implements ITypingNotificationService {
               .forEach((feedData) {
                 if (feedData['new_val'] == null) return;
 
-                final typing = TypingEvent.fromJson(feedData['new_val']);
+                final typing = _eventFromFeed(feedData);
                 _controller.sink.add(typing);
                 _removeEvent(typing);
               })
@@ -66,7 +66,9 @@ class TypingNotification implements ITypingNotificationService {
   }
 
   _removeEvent(TypingEvent event) {
-    _r.table('typing_events').filter({'id': event.id}).delete(
-        {'return_changes': true}).run(_connection!);
+    _r
+        .table('typing_events')
+        .get(event.id)
+        .delete({'return_changes': false}).run(_connection!);
   }
 }

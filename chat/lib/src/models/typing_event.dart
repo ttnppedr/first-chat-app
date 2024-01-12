@@ -5,7 +5,7 @@ extension TypingParsing on Typing {
     return this.toString().split('.').last;
   }
 
-  static Typing fromString(String status) {
+  static Typing fromString(String? status) {
     return Typing.values.firstWhere((element) => element.value() == status);
   }
 }
@@ -29,7 +29,7 @@ class TypingEvent {
     final event = TypingEvent(
       from: json['from'],
       to: json['to'],
-      event: TypingParsing.fromString(json['status']),
+      event: TypingParsing.fromString(json['event']),
     );
     event._id = json['id'];
     return event;

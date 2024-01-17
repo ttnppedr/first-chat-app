@@ -41,7 +41,7 @@ class SqfliteDatasource implements IDatasource {
       return chatsWithLatestMessages.map<Chat>((row) {
         final int? unread = int.tryParse(chatsWithUnreadMessages.firstWhere(
             (ele) => row['chat_id'] == ele['chat_id'],
-            orElse: () => {'unread': 0})['unread']);
+            orElse: () => {'unread': 0})['unread'] as String);
 
         final chat = Chat.fromMap(row);
         chat.unread = unread!;

@@ -34,6 +34,10 @@ class SqfliteDatasource implements IDatasource {
       final chatsWithLatestMessages = await txn.rawQuery(
           '''SELECT messages.* FROM (SELECT chat_id, MAX(created_at) AS created_at FROM messages GROUP BY chat_id) AS latest_message INNER JSON messages ON messages.chat_id = latest_message.chat_id AND messages.created_at = latest_message.created_at''');
 
+      if (chatsWithLatestMessages.isEmpty) {
+        return [];
+      }
+
       final chatsWithUnreadMessages = await txn.rawQuery(
           '''SELECT chat_id, count(*) AS unread FROM messages WHERE receipt= ? GROUP BY chat_id''',
           ['delivered']);
@@ -52,13 +56,17 @@ class SqfliteDatasource implements IDatasource {
   }
 
   @override
-  Future<Chat> findChat(String chatId) async {
+  Future<Chat?> findChat(String chatId) async {
     return _db.transaction((txn) async {
       final listOfChatMaps = await txn.query(
         'chats',
         where: 'id = ?',
         whereArgs: [chatId],
       );
+
+      if (listOfChatMaps.isEmpty) {
+        return null;
+      }
 
       final unread = Sqflite.firstIntValue(await txn.rawQuery(
           'SELECT COUNT(*) FROM messages WHERE chat_id = ? AND receipt = ?',

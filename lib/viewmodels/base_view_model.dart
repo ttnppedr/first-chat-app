@@ -1,5 +1,6 @@
 import 'package:first_chat_app/data/datasources/datasource_contract.dart';
 import 'package:first_chat_app/models/local_message.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/chat.dart';
 
@@ -8,6 +9,7 @@ abstract class BaseViewModel {
 
   BaseViewModel(this._database);
 
+  @protected
   Future<void> addMessage(LocalMessage message) async {
     if (!await _isExistingChat(message.chatId)) {
       await _createNewChat(message.chatId);

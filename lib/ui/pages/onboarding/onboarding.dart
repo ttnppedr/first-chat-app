@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../widgets/logo.dart';
+import '../../widgets/onboarding/logo.dart';
+import '../../widgets/onboarding/profile_upload.dart';
 
 class Onboarding extends StatefulWidget {
   const Onboarding({super.key});
@@ -23,6 +24,8 @@ class _OnboardingState extends State<Onboarding> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _logo(context),
+              Spacer(),
+              ProfileUpload(),
             ],
           ),
         ),

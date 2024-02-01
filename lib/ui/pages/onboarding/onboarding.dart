@@ -1,5 +1,11 @@
+import 'dart:io';
+
 import 'package:first_chat_app/colors.dart';
+import 'package:first_chat_app/states_management/onboarding/onboarding_cubit.dart';
+import 'package:first_chat_app/states_management/onboarding/onboarding_state.dart';
+import 'package:first_chat_app/states_management/onboarding/profile_image_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../widgets/onboarding/logo.dart';
 import '../../widgets/onboarding/profile_upload.dart';
@@ -13,6 +19,7 @@ class Onboarding extends StatefulWidget {
 }
 
 class _OnboardingState extends State<Onboarding> {
+  String _username = '';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +41,9 @@ class _OnboardingState extends State<Onboarding> {
                 child: CustomTextField(
                   hint: 'what\'s your name?',
                   height: 45,
-                  onchanged: (val) {},
+                  onchanged: (val) {
+                    _username = val;
+                  },
                   inputAction: TextInputAction.done,
                 ),
               ),
@@ -42,7 +51,24 @@ class _OnboardingState extends State<Onboarding> {
               Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16),
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    final error = _checkInputs();
+                    if (error.isNotEmpty) {
+                      final snackBar = SnackBar(
+                        content: Text(
+                          error,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                      return;
+                    }
+
+                    await _connectSession();
+                  },
                   child: Container(
                     height: 45,
                     alignment: Alignment.center,
@@ -65,11 +91,40 @@ class _OnboardingState extends State<Onboarding> {
                 ),
               ),
               Spacer(flex: 2),
+              BlocBuilder<OnboardingCubit, OnboardingState>(
+                  builder: (context, state) => state is Loading
+                      ? Center(child: CircularProgressIndicator())
+                      : Container()),
+              Spacer(flex: 1),
             ],
           ),
         ),
       ),
     );
+  }
+
+  _connectSession() async {
+    final profileImageState = context.read<ProfileImageCubit>().state;
+    if (profileImageState is ImageLoadedState) {
+      await context.read<OnboardingCubit>().connect(
+            _username,
+            File(profileImageState.imagePath),
+          );
+    }
+  }
+
+  String _checkInputs() {
+    var error = '';
+
+    if (_username.isEmpty) {
+      error = 'Please enter your name';
+    }
+
+    if (context.read<ProfileImageCubit>().state == null) {
+      error = error + '\n' + 'Please enter your name';
+    }
+
+    return error;
   }
 }
 

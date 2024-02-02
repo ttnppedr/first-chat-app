@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: lightTheme(context),
       darkTheme: darkTheme(context),
-      home: CompositionRoot.composeOnboardingUi(),
+      home: CompositionRoot.composeHomeUi(),
     );
   }
 }

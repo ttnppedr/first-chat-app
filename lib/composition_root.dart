@@ -1,7 +1,9 @@
 import 'package:chat/chat.dart';
 import 'package:first_chat_app/data/services/image_uploader.dart';
+import 'package:first_chat_app/states_management/home/home_cubit.dart';
 import 'package:first_chat_app/states_management/onboarding/onboarding_cubit.dart';
 import 'package:first_chat_app/states_management/onboarding/profile_image_cubit.dart';
+import 'package:first_chat_app/ui/pages/home/home.dart';
 import 'package:first_chat_app/ui/pages/onboarding/onboarding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,6 +33,17 @@ class CompositionRoot {
         BlocProvider(create: (BuildContext context) => imageCubit),
       ],
       child: Onboarding(),
+    );
+  }
+
+  static Widget composeHomeUi() {
+    HomeCubit homeCubit = HomeCubit(_userService!);
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (BuildContext context) => homeCubit),
+      ],
+      child: Home(),
     );
   }
 }

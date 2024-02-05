@@ -10,12 +10,12 @@ import 'chats_view_model_test.mocks.dart';
 
 @GenerateNiceMocks([MockSpec<IDatasource>(as: #MockDatasource)])
 void main() {
-  ChatsViewModel? sut;
+  ChatViewModel? sut;
   MockDatasource? mockDatasource;
 
   setUp(() {
     mockDatasource = MockDatasource();
-    sut = ChatsViewModel(mockDatasource!);
+    sut = ChatViewModel(mockDatasource!);
   });
 
   final message = Message.fromJson({

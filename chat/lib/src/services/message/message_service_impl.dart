@@ -9,12 +9,13 @@ import 'package:rethink_db_ns/rethink_db_ns.dart';
 class MessageService implements IMessageService {
   final Connection? _connection;
   final RethinkDb r;
-  final IEncryption _encryption;
+  final IEncryption? _encryption;
 
   final _controller = StreamController<Message>.broadcast();
   StreamSubscription? _changeFeed;
 
-  MessageService(this.r, this._connection, this._encryption);
+  MessageService(this.r, this._connection, {IEncryption? encryption})
+      : _encryption = encryption;
 
   @override
   dispose() {
@@ -31,7 +32,9 @@ class MessageService implements IMessageService {
   @override
   Future<bool> send(Message message) async {
     var data = message.toJson();
-    data['contents'] = _encryption.encrypt(data['contents']);
+    if (_encryption != null) {
+      data['contents'] = _encryption.encrypt(data['contents']);
+    }
     Map record = await r.table('messages').insert(data).run(_connection!);
     return record['inserted'] == 1;
   }
@@ -60,7 +63,9 @@ class MessageService implements IMessageService {
 
   Message _messageFromFeed(feedData) {
     var data = feedData['new_val'];
-    data['contents'] = _encryption.decrypt(data['contents']);
+    if (_encryption != null) {
+      data['contents'] = _encryption.decrypt(data['contents']);
+    }
     return Message.fromJson(data);
   }
 

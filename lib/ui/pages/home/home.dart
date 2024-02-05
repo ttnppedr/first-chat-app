@@ -1,5 +1,8 @@
+import 'package:chat/chat.dart';
+import 'package:first_chat_app/states_management/home/chats_cubit.dart';
 import 'package:first_chat_app/states_management/home/home_cubit.dart';
 import 'package:first_chat_app/states_management/home/home_state.dart';
+import 'package:first_chat_app/states_management/message/message_bloc.dart';
 import 'package:first_chat_app/ui/widgets/home/active/active_users.dart';
 import 'package:first_chat_app/ui/widgets/home/chats/chats.dart';
 import 'package:first_chat_app/ui/widgets/home/profile_image.dart';
@@ -13,11 +16,19 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
   @override
   void initState() {
     super.initState();
+    context.read<ChatsCubit>().chats();
     context.read<HomeCubit>().activeUsers();
+    final user = User.fromJson({
+      "id": "c750bf20-dabe-4007-ae4c-3be28690c989",
+      "active": true,
+      "photoUrl": "https://picsum.photos/seed/picc/200/300",
+      "lastseen": DateTime.now(),
+    });
+    context.read<MessageBloc>().add(MessageEvent.onSubscribed(user));
   }
 
   @override
@@ -102,4 +113,7 @@ class _HomeState extends State<Home> {
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }

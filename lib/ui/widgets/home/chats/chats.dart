@@ -10,11 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../models/chat.dart';
+import '../../../pages/home/home_router.dart';
 
 class Chats extends StatefulWidget {
   final User user;
+  final IHomeRouter router;
 
-  const Chats(this.user);
+  const Chats(this.user, this.router);
 
   @override
   State<Chats> createState() => _ChatsState();
@@ -56,7 +58,13 @@ class _ChatsState extends State<Chats> {
           top: 30,
           right: 16,
         ),
-        itemBuilder: (_, index) => _chatItem(chats[index]),
+        itemBuilder: (_, index) => GestureDetector(
+            child: _chatItem(chats[index]),
+            onTap: () async {
+              await this.widget.router.onShowMessageThread(
+                  context, chats[index].from, widget.user,
+                  chatId: chats[index].id);
+            }),
         separatorBuilder: (_, __) => const Divider(),
         itemCount: chats.length);
   }

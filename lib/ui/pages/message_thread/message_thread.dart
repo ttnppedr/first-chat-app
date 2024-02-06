@@ -12,6 +12,8 @@ import '../../../states_management/home/chats_cubit.dart';
 import '../../../states_management/message_thread/message_thread_cubit.dart';
 import '../../../states_management/typing/typing_notification_bloc.dart';
 import '../../../theme.dart';
+import '../../widgets/message_thread/receiver_message.dart';
+import '../../widgets/message_thread/sender_message.dart';
 import '../../widgets/shared/header_status.dart';
 
 class MessageThread extends StatefulWidget {
@@ -72,13 +74,24 @@ class _MessageThreadState extends State<MessageThread> {
               },
             ),
             Expanded(
-              child: HeaderStatus(
-                receiver!.username!,
-                receiver!.photoUrl!,
-                receiver!.active,
-                lastSeen: receiver!.lastseen,
-              ),
-            ),
+                child: BlocBuilder<TypingNotificationBloc,
+                    TypingNotificationState>(
+              bloc: widget.typingNotificationBloc,
+              builder: (_, state) {
+                bool typing;
+                if (state is TypingNotificationReceivedSuccess &&
+                    state.event.event == Typing.start &&
+                    state.event.event == receiver!.id) {
+                  typing = true;
+                }
+                return HeaderStatus(
+                  receiver!.username!,
+                  receiver!.photoUrl!,
+                  receiver!.active,
+                  lastSeen: receiver!.lastseen,
+                );
+              },
+            )),
           ],
         ),
       ),
@@ -91,7 +104,22 @@ class _MessageThreadState extends State<MessageThread> {
           children: [
             Flexible(
               flex: 6,
-              child: Container(),
+              child: BlocBuilder<MessageThreadCubit, List<LocalMessage>>(
+                builder: (__, messages) {
+                  this.messages = messages;
+
+                  if (this.messages.isEmpty) {
+                    return Container(
+                      color: Colors.transparent,
+                    );
+                  }
+
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) => _scrollToEnd());
+
+                  return _buildListOfMessages();
+                },
+              ),
             ),
             Expanded(
               child: Container(
@@ -130,7 +158,9 @@ class _MessageThreadState extends State<MessageThread> {
                               Icons.send,
                               color: Colors.white,
                             ),
-                            onPressed: () {},
+                            onPressed: () {
+                              _sendMessage();
+                            },
                           ),
                         ),
                       ),
@@ -145,6 +175,28 @@ class _MessageThreadState extends State<MessageThread> {
     );
   }
 
+  _buildListOfMessages() => ListView.builder(
+        padding: EdgeInsets.only(top: 16, left: 16, bottom: 20),
+        itemBuilder: (__, index) {
+          if (messages[index].message!.from == receiver!.id) {
+            _sendReceipt(messages[index]);
+            return Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: ReceiverMessage(messages[index], receiver!.photoUrl!),
+            );
+          } else {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: SenderMessage(messages[index]),
+            );
+          }
+        },
+        itemCount: messages.length,
+        controller: _scrollController,
+        physics: AlwaysScrollableScrollPhysics(),
+        addAutomaticKeepAlives: true,
+      );
+
   _buildMessageInput(BuildContext context) {
     final _border = OutlineInputBorder(
       borderRadius: BorderRadius.all(Radius.circular(90)),
@@ -154,7 +206,13 @@ class _MessageThreadState extends State<MessageThread> {
     );
 
     return Focus(
-      onFocusChange: (focus) {},
+      onFocusChange: (focus) {
+        if (_startTypingTimer == null || (_startTypingTimer != null && focus)) {
+          return;
+        }
+        _stopTypingTimer?.cancel();
+        _displayTyping(Typing.stop);
+      },
       child: TextFormField(
         controller: _textEditingController,
         textInputAction: TextInputAction.newline,
@@ -162,7 +220,7 @@ class _MessageThreadState extends State<MessageThread> {
         maxLines: null,
         style: Theme.of(context).textTheme.bodySmall,
         cursorColor: kPrimary,
-        onChanged: (val) {},
+        onChanged: _sendTypingNotification,
         decoration: InputDecoration(
           contentPadding: EdgeInsets.only(left: 16, right: 16, bottom: 8),
           enabledBorder: _border,
@@ -217,6 +275,83 @@ class _MessageThreadState extends State<MessageThread> {
         widget.chatsCubit.chats();
       }
     });
+  }
+
+  _sendMessage() {
+    if (_textEditingController.text.trim().isEmpty) {
+      return;
+    }
+
+    final message = Message(
+      from: widget.me.id,
+      to: receiver!.id,
+      timestamp: DateTime.now(),
+      contents: _textEditingController.text.trim(),
+    );
+
+    final sendMessageEvent = MessageEvent.onMessageSent(message);
+    widget.messageBloc.add(sendMessageEvent);
+
+    _textEditingController.clear();
+    _startTypingTimer?.cancel();
+    _stopTypingTimer?.cancel();
+
+    _displayTyping(Typing.stop);
+  }
+
+  void _displayTyping(Typing event) {
+    final typing =
+        TypingEvent(from: widget.me.id, to: receiver!.id, event: event);
+    widget.typingNotificationBloc
+        .add(TypingNotificationEvent.onTypingEventSent(typing));
+  }
+
+  void _sendTypingNotification(String text) {
+    if (text.trim().isEmpty || messages.isEmpty) {
+      return;
+    }
+
+    if (_startTypingTimer?.isActive ?? false) {
+      return;
+    }
+
+    if (_stopTypingTimer?.isActive ?? false) {
+      _stopTypingTimer?.cancel();
+    }
+
+    _displayTyping(Typing.start);
+
+    _startTypingTimer = Timer(Duration(seconds: 5), () {});
+    _stopTypingTimer = Timer(Duration(seconds: 6), () {
+      _displayTyping(Typing.stop);
+    });
+  }
+
+  _scrollToEnd() {
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  _sendReceipt(LocalMessage message) async {
+    if (message.receipt == ReceiptStatus.read) {
+      return;
+    }
+
+    final receipt = Receipt(
+      recipient: message.message!.from,
+      messageId: message.message!.id,
+      status: ReceiptStatus.read,
+      timestamp: DateTime.now(),
+    );
+
+    context.read<ReceiptBloc>().add(ReceiptEvent.onMessageSent(receipt));
+    await context
+        .read<MessageThreadCubit>()
+        .viewModel
+        .updateMessageReceipt(receipt);
   }
 
   @override

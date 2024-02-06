@@ -1,6 +1,8 @@
+import 'package:chat/chat.dart';
 import 'package:first_chat_app/colors.dart';
 import 'package:first_chat_app/states_management/home/chats_cubit.dart';
 import 'package:first_chat_app/states_management/message/message_bloc.dart';
+import 'package:first_chat_app/states_management/typing/typing_notification_bloc.dart';
 import 'package:first_chat_app/theme.dart';
 import 'package:first_chat_app/ui/widgets/home/profile_image.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +12,9 @@ import 'package:intl/intl.dart';
 import '../../../../models/chat.dart';
 
 class Chats extends StatefulWidget {
-  const Chats();
+  final User user;
+
+  const Chats(this.user);
 
   @override
   State<Chats> createState() => _ChatsState();
@@ -18,11 +22,13 @@ class Chats extends StatefulWidget {
 
 class _ChatsState extends State<Chats> {
   var chats = [];
+  var typingEvents = [];
 
   @override
   void initState() {
     super.initState();
     _updateChatsOnMessageReceived();
+    context.read<ChatsCubit>().chats();
   }
 
   @override
@@ -30,6 +36,15 @@ class _ChatsState extends State<Chats> {
     return BlocBuilder<ChatsCubit, List<Chat>>(
       builder: (_, chats) {
         this.chats = chats;
+
+        if (this.chats.isEmpty) {
+          return Container();
+        }
+
+        context.read<TypingNotificationBloc>().add(
+            TypingNotificationEvent.onSubscribed(widget.user,
+                usersWithChat: chats.map((e) => e.from!.id!).toList()));
+
         return _buildListView();
       },
     );
@@ -59,16 +74,42 @@ class _ChatsState extends State<Chats> {
                 color: isLightTheme(context) ? Colors.black : Colors.white,
               ),
         ),
-        subtitle: Text(
-          chat.mostRecent!.message!.contents!,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          softWrap: true,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: isLightTheme(context) ? Colors.black54 : Colors.white70,
-                fontWeight:
-                    chat.unread > 0 ? FontWeight.bold : FontWeight.normal,
-              ),
+        subtitle: BlocBuilder<TypingNotificationBloc, TypingNotificationState>(
+          builder: (__, state) {
+            if (state is TypingNotificationReceivedSuccess &&
+                state.event.event == Typing.start &&
+                state.event.from == chat.from!.id) {
+              this.typingEvents.add(state.event.from);
+            }
+
+            if (state is TypingNotificationReceivedSuccess &&
+                state.event.event == Typing.stop &&
+                state.event.from == chat.from!.id) {
+              this.typingEvents.add(state.event.from);
+            }
+
+            if (this.typingEvents.contains(chat.from!.id)) {
+              return Text(
+                'typing...',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+              );
+            }
+
+            return Text(
+              chat.mostRecent!.message!.contents!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              softWrap: true,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color:
+                        isLightTheme(context) ? Colors.black54 : Colors.white70,
+                    fontWeight:
+                        chat.unread > 0 ? FontWeight.bold : FontWeight.normal,
+                  ),
+            );
+          },
         ),
         trailing: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -98,7 +139,7 @@ class _ChatsState extends State<Chats> {
                                   ),
                         ),
                       )
-                    : Container(),
+                    : SizedBox.shrink(),
               ),
             ),
           ],

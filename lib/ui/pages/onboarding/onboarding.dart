@@ -4,6 +4,7 @@ import 'package:first_chat_app/colors.dart';
 import 'package:first_chat_app/states_management/onboarding/onboarding_cubit.dart';
 import 'package:first_chat_app/states_management/onboarding/onboarding_state.dart';
 import 'package:first_chat_app/states_management/onboarding/profile_image_cubit.dart';
+import 'package:first_chat_app/ui/pages/onboarding/onboarding_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,7 +13,9 @@ import '../../widgets/onboarding/profile_upload.dart';
 import '../../widgets/shared/custom_text_field.dart';
 
 class Onboarding extends StatefulWidget {
-  const Onboarding({super.key});
+  final IOnboardingRouter router;
+
+  const Onboarding(this.router);
 
   @override
   State<Onboarding> createState() => _OnboardingState();
@@ -91,10 +94,16 @@ class _OnboardingState extends State<Onboarding> {
                 ),
               ),
               Spacer(flex: 2),
-              BlocBuilder<OnboardingCubit, OnboardingState>(
-                  builder: (context, state) => state is Loading
-                      ? Center(child: CircularProgressIndicator())
-                      : Container()),
+              BlocConsumer<OnboardingCubit, OnboardingState>(
+                builder: (context, state) => state is Loading
+                    ? Center(child: CircularProgressIndicator())
+                    : Container(),
+                listener: (_, state) {
+                  if (state is OnboardingSuccess) {
+                    widget.router.onSessionSuccess(context, state.user);
+                  }
+                },
+              ),
               Spacer(flex: 1),
             ],
           ),

@@ -10,29 +10,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class Home extends StatefulWidget {
-  const Home();
+  final User me;
+  const Home(this.me);
 
   @override
   State<Home> createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
+  User? _user;
+
   @override
   void initState() {
     super.initState();
-    context.read<ChatsCubit>().chats();
-    context.read<HomeCubit>().activeUsers();
-    final user = User.fromJson({
-      "id": "c750bf20-dabe-4007-ae4c-3be28690c989",
-      "active": true,
-      "photoUrl": "https://picsum.photos/seed/picc/200/300",
-      "lastseen": DateTime.now(),
-    });
-    context.read<MessageBloc>().add(MessageEvent.onSubscribed(user));
+    _user = widget.me;
+    _initialSetup();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -42,7 +40,7 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
             child: Row(
               children: [
                 ProfileImage(
-                  imageUrl: "https://picsum.photos/seed/picc/200/300",
+                  imageUrl: _user!.photoUrl!,
                   online: true,
                 ),
                 Column(
@@ -50,7 +48,7 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                     Padding(
                       padding: const EdgeInsets.only(left: 8.0),
                       child: Text(
-                        'Jess',
+                        _user!.username!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -106,12 +104,20 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
         ),
         body: TabBarView(
           children: [
-            Chats(),
+            Chats(_user!),
             ActiveUsers(),
           ],
         ),
       ),
     );
+  }
+
+  _initialSetup() async {
+    final user =
+        (!_user!.active) ? await context.read<HomeCubit>().connect() : _user;
+    context.read<ChatsCubit>().chats();
+    context.read<HomeCubit>().activeUsers(user!);
+    context.read<MessageBloc>().add(MessageEvent.onSubscribed(user));
   }
 
   @override

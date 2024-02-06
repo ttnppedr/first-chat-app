@@ -41,7 +41,7 @@ class _ActiveUsersState extends State<ActiveUsers> {
           online: true,
         ),
         title: Text(
-          'Anna',
+          user.username!,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
